@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/osgCMakeExample.dir/main.cpp.o  -o osgCMakeExample -rdynamic /usr/local/lib/libosg.so /usr/local/lib/libosgViewer.so /usr/local/lib/libosgUtil.so /usr/local/lib/libosgDB.so /usr/local/lib/libosgGA.so /usr/local/lib/libOpenThreads.so -Wl,-rpath,/usr/local/lib 
