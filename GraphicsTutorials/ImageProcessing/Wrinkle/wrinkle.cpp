@@ -9,47 +9,43 @@ using namespace std;
 
 // Global variables
 
-Mat src, src_gray;
-Mat dst, detected_edges;
+Mat src;
 
 int edgeThresh = 1;
 int lowThreshold;
 int const max_lowThreshold = 255;
-int ratio = 3;
-int kernel_size = 3;
+
 char* window_name = "Edge Map";
 
-Mat otsu_binarization(Mat img)
-{
-Mat img_bw;
-cv::threshold(img, img_bw, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-return img_bw;
-}
 
 void CannyThreshold(int, void*)
 {
-  blur( src_gray, detected_edges, Size(3,3) );
+  Mat dst, detected_edges,src_gray;
+  cvtColor( src, src_gray, CV_BGR2GRAY );
+  int ratio = 3,kernel_size = 3;
+  dst.create( src_gray.size(), src_gray.type() );
+  blur( src_gray, detected_edges, Size(3,3) );	
   Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
   dst = Scalar::all(0);
-  src.copyTo( dst, detected_edges);
-  dst=otsu_binarization(dst);
-  for(int i=0;i<dst.rows;i=i+10)
+  src_gray.copyTo( dst, detected_edges);
+  int step_r=40,step_c=40;
+  for(int i=0;i+step_r<dst.rows;i=i+step_r)
   {  
-  	for(int j=0;j<dst.cols;j=j+10)
+  	for(int j=0;j+step_c<dst.cols;j=j+step_c)
   {
   	int sum=0,status=0;
-  	for(int k=i;k<i+10;k++)
-  		for(int l=j;l<j+10;l++){
-  			     sum=sum+dst.at<uchar>(k,l);
-  			     std::cout<<int(dst.at<uchar>(k,l));
+  	 for(int k=i;k<i+step_r;k++)
+  		for(int l=j;l<j+step_c;l++){
+  			     sum=sum+int(int(dst.at<uchar>(k,l))>0);
                 if(sum>10)
                 	status=1;
   		}
   		if(status)
-  			for(int k=i;k<i+10;k++)
-  		for(int l=j;l<j+10;l++){
-  			     dst.at<uchar>(k,l)=255;
-  		}
+  			for(int k=i;k<i+step_r;k++)
+            for(int l=j;l<j+step_c;l++){
+            dst.at<uchar>(k,l)=100;
+  }
+
   }
   }
   imshow( window_name, dst );
@@ -73,8 +69,6 @@ int main( int argc, char** argv )
     }
 
   src=image.clone();
-  dst.create( src.size(), src.type() );
-  cvtColor( src, src_gray, CV_BGR2GRAY );
   namedWindow( window_name, CV_WINDOW_AUTOSIZE );
   namedWindow( "Original", WINDOW_AUTOSIZE );// Create a window for display.
   imshow( "Original", src );
