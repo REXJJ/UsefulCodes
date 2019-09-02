@@ -1,0 +1,5 @@
+/home/rex/Desktop/Testing/Non_Integrated_Codes/Wrinkle_Detection/build/CMakeFiles/edit_cache.dir
+/home/rex/Desktop/Testing/Non_Integrated_Codes/Wrinkle_Detection/build/CMakeFiles/image_poly.dir
+/home/rex/Desktop/Testing/Non_Integrated_Codes/Wrinkle_Detection/build/CMakeFiles/scroll.dir
+/home/rex/Desktop/Testing/Non_Integrated_Codes/Wrinkle_Detection/build/CMakeFiles/rebuild_cache.dir
+/home/rex/Desktop/Testing/Non_Integrated_Codes/Wrinkle_Detection/build/CMakeFiles/test.dir
