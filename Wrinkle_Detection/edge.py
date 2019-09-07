@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-img = cv2.imread('/home/rex/Desktop/Images/blank_sheet.jpg')
+img = cv2.imread('/home/rex/Desktop/TestData2/Selection_579.png')
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 img_gaussian = gray
 kernel = np.ones((2,2),np.uint8)

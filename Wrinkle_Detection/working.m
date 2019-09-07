@@ -2,7 +2,7 @@ clc;
 clear;
 close all;
 
-global ksize m_t s_t processed_image vlen;
+global ksize m_t s_t processed_image m_t1 s_t1 processed_image1 m_t2 s_t2 processed_image2 vlen vden;
 vlen=0;
 reference = imread('/home/rex/Desktop/reference.jpg');
 imshow(reference)
@@ -30,32 +30,54 @@ sp1=subplot(1,2,1);
 imshow(reference);
 fig = uifigure;
 sldl=uislider(fig);
-sldl.Limits=[1 500];
-sldl.Position = [81,354,419,23];
+sldl.Limits=[0 500];
+sldl.Position = [81,400,419,23];
+sldd=uislider(fig);
+sldd.Limits=[1 31];
+sldd.Position = [81,360,419,23];
 sld = uislider(fig);
 sld.Limits = [1 21];
-sld.Position = [81,254,419,23];
+sld.Position = [81,310,419,23];
 sldm = uislider(fig);
 sldm.Limits = [0 100];
-sldm.Position = [81,154,419,23];
+sldm.Position = [81,260,419,23];
 slds = uislider(fig);
 slds.Limits = [0 100];
-slds.Position = [81,54,419,23];
+slds.Position = [81,220,419,23];
+sldm1 = uislider(fig);
+sldm1.Limits = [0 100];
+sldm1.Position = [81,170,419,23];
+slds1 = uislider(fig);
+slds1.Limits = [0 100];
+slds1.Position = [81,130,419,23];
+sldm2 = uislider(fig);
+sldm2.Limits = [0 100];
+sldm2.Position = [81,80,419,23];
+slds2 = uislider(fig);
+slds2.Limits = [0 100];
+slds2.Position = [81,40,419,23];
 ksize=9;
 m_t=30;
 s_t=30;
+m_t1=30;
+s_t1=30;
+m_t2=30;
+s_t2=30;
+vlen=0;
+vden =1;
 sld.Value=ksize;
 sldm.Value=m_t;
 slds.Value=s_t;
+sldm1.Value=m_t1;
+slds1.Value=s_t1;
+sldm2.Value=m_t2;
+slds2.Value=s_t2;
 for k = 1:numel(S)
     h=0.075;
     w=0.075;
     disp(k);
     F = fullfile(D,S(k).name);
     I = imread(F);
-    figure(3)
-    sp1=subplot(1,2,2);
-    imshow(I);
     [G,Gx,Gy]=getgradient(I);
     figure(1)
     sp3=subplot(2,2,3);
@@ -69,20 +91,57 @@ for k = 1:numel(S)
     title('Y gradient Test Image')  
      %xlswrite('/home/rex/Desktop/test.csv',gx);
     figure(5)
-    vector_display(I,Gx,Gy,vlen)
+    vector_display(I,Gx,Gy,vlen,vden)
+    sldd.ValueChangedFcn = @(sldd,event) updateDen(sldd,I,Gx,Gy);
     sldl.ValueChangedFcn = @(sldl,event) updateLength(sldl,I,Gx,Gy);
-    sld.ValueChangedFcn = @(sld,event) updateKsize(sld,g,G);
-    sldm.ValueChangedFcn = @(sldm,event) updatem(sldm,g,G);
-    slds.ValueChangedFcn = @(slds,event) updates(slds,g,G);
-    process(g,G,ksize,m_t,s_t);
-    figure(4);
+    sld.ValueChangedFcn = @(sld,event) updateKsize(sld,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy));
+    sldm.ValueChangedFcn = @(sldm,event) updatem(sldm,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),0);
+    slds.ValueChangedFcn = @(slds,event) updates(slds,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),0);
+    sldm1.ValueChangedFcn = @(sldm1,event) updatem(sldm1,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),1);
+    slds1.ValueChangedFcn = @(slds1,event) updates(slds1,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),1);
+    sldm2.ValueChangedFcn = @(sldm2,event) updatem(sldm2,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),2);
+    slds2.ValueChangedFcn = @(slds2,event) updates(slds2,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),2);
+    process(g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),ksize,m_t,s_t,m_t1,s_t1,m_t2,s_t2,4);
+    update_display(I);
+    figure(3)
+    sp1=subplot(1,2,2);
+    imshow(I);
+    w = waitforbuttonpress;
+    %S(k).data = I; % optional, save data.
+end
+
+function update_display(I)
     global processed_image;
     BW=processed_image>0;
+    figure(2)
+    subplot(1,2,1);
+    imshow(BW);
+    title('Filtered Image');
+    subplot(1,2,2);
     B = labeloverlay(I,BW);
     imshow(B)
-    w = waitforbuttonpress;
+    title('Overlaid Image');
+    figure(6)
+    sp1=subplot(1,2,1);
+    global processed_image1;
+    BW1=processed_image1>0;
+    imshow(BW1);
+    title('X Gradient Processed');
+    subplot(1,2,2);
+    B = labeloverlay(I,BW1);
+    imshow(B)
+    title('Overlaid Image');  
+    figure(7)
+    global processed_image2;
+    BW2=processed_image2>0;
+    sp2=subplot(1,2,1);
+    imshow(BW2);
+    title('Y Gradient Processed');
+    subplot(1,2,2);
+    B = labeloverlay(I,BW2);
+    imshow(B)
+    title('Overlaid Image');
 
-    %S(k).data = I; % optional, save data.
 end
 
 function image = preprocess(im)
@@ -99,66 +158,139 @@ function display_image(im)
     imshow(im , [min(im(:)) max(im(:))])
 end
 
-function process(im_ref,im_test,ksize,m_t,s_t)
-    a = im_test;
-    mean_ref = zeros(size(im_ref));
-    std_ref = zeros(size(im_ref));
-    mean_test = zeros(size(im_ref));
-    std_ref = zeros(size(im_ref));
-    step=floor(ksize/2);
-    parfor r=step+1:size(im_ref,1)-step
-        v=zeros(size(im_test(r,:)));
-        for c=step+1:size(im_ref,2)-step
-            mean_ref=mean2(im_ref(r-step:r+step,c-step:c+step));
-            std_ref=std2(im_ref(r-step:r+step,c-step:c+step));
-            mean_test=mean2(a(r-step:r+step,c-step:c+step));
-            std_test=mean2(a(r-step:r+step,c-step:c+step));
-            if abs(mean_ref-mean_test)>m_t&&abs(std_ref-std_test)>s_t
-                v(c)=255;
-            end
-        end
-        im_test(r,:)=v;
+function process(im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2,ksize,m_t,s_t,m_t1,s_t1,m_t2,s_t2,id)
+    a0 = im_test0;
+    a1 = im_test1;
+    a2 = im_test2;
+    if id==0 || id==4
+    mean_ref0 = zeros(size(im_ref0));
+    std_ref0 = zeros(size(im_ref0));
+    mean_test0 = zeros(size(im_ref0));
+    std_test0 = zeros(size(im_ref0));
     end
-    proc=im_test;
-    global processed_image;
-    processed_image=proc;
-    figure(2)
-    display_image(proc);
-    title('Processed image');
+    if id==1||id==4
+    mean_ref1 = zeros(size(im_ref1));
+    std_ref1 = zeros(size(im_ref1));
+    mean_test1 = zeros(size(im_ref1));
+    std_test1 = zeros(size(im_ref1));
+    end
+    if id==2||id==4
+    mean_ref2 = zeros(size(im_ref2));
+    std_ref2 = zeros(size(im_ref2));
+    mean_test2 = zeros(size(im_ref2));
+    std_test2 = zeros(size(im_ref2));
+    end 
+    
+    step=floor(ksize/2);
+    parfor r=step+1:size(im_ref0,1)-step
+        v0=zeros(size(im_test0(r,:)));
+        v1=zeros(size(im_test1(r,:)));
+        v2=zeros(size(im_test2(r,:)));
+        for c=step+1:size(im_ref0,2)-step
+            if id==0||id==4
+            mean_ref0=mean2(im_ref0(r-step:r+step,c-step:c+step));
+            std_ref0=std2(im_ref0(r-step:r+step,c-step:c+step));
+            mean_test0=mean2(a0(r-step:r+step,c-step:c+step));
+            std_test0=mean2(a0(r-step:r+step,c-step:c+step));
+            if abs(mean_ref0-mean_test0)>m_t&&abs(std_ref0-std_test0)>s_t
+                v0(c)=255;
+            end
+            end
+            
+            if id==1||id==4 
+            mean_ref1=mean2(im_ref1(r-step:r+step,c-step:c+step));
+            std_ref1=std2(im_ref1(r-step:r+step,c-step:c+step));
+            mean_test1=mean2(a1(r-step:r+step,c-step:c+step));
+            std_test1=mean2(a1(r-step:r+step,c-step:c+step));
+            if abs(mean_ref1-mean_test1)>m_t1&&abs(std_ref1-std_test1)>s_t1
+                v1(c)=255;
+            end
+            end
+            if id==2||id==4
+            mean_ref2=mean2(im_ref2(r-step:r+step,c-step:c+step));
+            std_ref2=std2(im_ref2(r-step:r+step,c-step:c+step));
+            mean_test2=mean2(a2(r-step:r+step,c-step:c+step));
+            std_test2=mean2(a2(r-step:r+step,c-step:c+step));
+            if abs(mean_ref2-mean_test2)>m_t2&&abs(std_ref2-std_test2)>s_t2
+                v2(c)=255;
+            end
+            end
+
+        end
+        im_test0(r,:)=v0;
+        im_test1(r,:)=v1;
+        im_test2(r,:)=v2;
+        
+    end
+    global processed_image processed_image1 processed_image2;
+    if id==0||id==4
+    processed_image=im_test0;
+    end
+    if id==1||id==4
+    processed_image1=im_test1;
+    end
+    if id==2||id==4
+    processed_image2=im_test2;
+    end
 end
 
-function vector_display(I,Gx,Gy,len)
+function vector_display(I,Gx,Gy,len,step)
     im=im2double(I);
     im=double(im);
     [nr,nc]=size(im);
-    [x y]=meshgrid(1:10:nc,1:10:nr);
-    u=Gx(1:10:end,1:10:end);
-    v=Gy(1:10:end,1:10:end);
+    [x y]=meshgrid(1:step:nc,1:step:nr);
+    u=Gx(1:step:end,1:step:end);
+    v=Gy(1:step:end,1:step:end);
     l=sqrt(u.^2+v.^2);
     figure(5)
     quiver(x(l>len),y(l>len),u(l>len),v(l>len))
 end
 
-function updateKsize(sld,im_ref,im_test)
-global ksize m_t s_t;
+function updateKsize(sld,I,im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2)
+global ksize m_t s_t m_t1 s_t1 m_t2 s_t2;
 ksize=floor(sld.Value);
-process(im_ref,im_test,ksize,m_t,s_t);
+process(im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2,ksize,m_t,s_t,m_t1,s_t1,m_t2,s_t2,4);
+update_display(I);
 end
 
-function updatem(sldm,im_ref,im_test)
-global ksize m_t s_t;
+function updatem(sldm,I,im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2,id)
+global ksize m_t s_t m_t1 s_t1 m_t2 s_t2;
+if id==0
 m_t=floor(sldm.Value);
-process(im_ref,im_test,ksize,m_t,s_t);
+end
+if id==1
+m_t1=floor(sldm.Value);
+end
+if id==2
+m_t2=floor(sldm.Value);
+end
+process(im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2,ksize,m_t,s_t,m_t1,s_t1,m_t2,s_t2,id);
+update_display(I);
 end
 
-function updates(slds,im_ref,im_test)
-global ksize m_t s_t;
+function updates(slds,I,im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2,id)
+global ksize m_t s_t m_t1 s_t1 m_t2 s_t2;
+if id==0
 s_t=floor(slds.Value);
-process(im_ref,im_test,ksize,m_t,s_t);
+end
+if id==1
+s_t1=floor(slds.Value);
+end
+if id==2
+s_t2=floor(slds.Value);
+end
+process(im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2,ksize,m_t,s_t,m_t1,s_t1,m_t2,s_t2,id);
+update_display(I);
 end
 
 function updateLength(sldl,I,Gx,Gy)
-global vlen;
+global vlen vden;
 vlen=floor(sldl.Value);
-vector_display(I,Gx,Gy,vlen);
+vector_display(I,Gx,Gy,vlen,vden);
+end
+
+function updateDen(sldd,I,Gx,Gy)
+global vlen vden;
+vden=floor(sldd.Value);
+vector_display(I,Gx,Gy,vlen,vden);
 end

@@ -2,7 +2,7 @@ clc;
 clear;
 close all;
 
-global ksize m_t s_t processed_image m_t1 s_t1 processed_image1 m_t2 s_t2 processed_image2 vlen vden reference;
+global ksize m_t s_t processed_image m_t1 s_t1 processed_image1 m_t2 s_t2 processed_image2 vlen vlenm vden reference;
 vlen=0;
 reference = imread('/home/rex/Desktop/reference.jpg');
 figure(3)
@@ -29,10 +29,13 @@ figure(2)
 fig = uifigure;
 sldl=uislider(fig);
 sldl.Limits=[0 500];
-sldl.Position = [81,400,419,23];
+sldl.Position = [81,410,419,23];
+sldlm=uislider(fig);
+sldlm.Limits=[0 1000];
+sldlm.Position = [81,450,419,23];
 sldd=uislider(fig);
 sldd.Limits=[1 31];
-sldd.Position = [81,360,419,23];
+sldd.Position = [81,370,419,23];
 sld = uislider(fig);
 sld.Limits = [1 21];
 sld.Position = [81,310,419,23];
@@ -62,6 +65,7 @@ s_t1=30;
 m_t2=30;
 s_t2=30;
 vlen=0;
+vlenm=1000;
 vden =1;
 sld.Value=ksize;
 sldm.Value=m_t;
@@ -70,6 +74,7 @@ sldm1.Value=m_t1;
 slds1.Value=s_t1;
 sldm2.Value=m_t2;
 slds2.Value=s_t2;
+sldlm.Value=vlenm;
 for k = 1:numel(S)
     h=0.075;
     w=0.075;
@@ -89,9 +94,10 @@ for k = 1:numel(S)
     title('Y gradient Test Image')  
      %xlswrite('/home/rex/Desktop/test.csv',gx);
     figure(5)
-    vector_display(I,Gx,Gy,vlen,vden)
+    vector_display(I,Gx,Gy,vlen,vlenm,vden)
     sldd.ValueChangedFcn = @(sldd,event) updateDen(sldd,I,Gx,Gy);
     sldl.ValueChangedFcn = @(sldl,event) updateLength(sldl,I,Gx,Gy);
+    sldlm.ValueChangedFcn = @(sldlm,event) updateLengthm(sldlm,I,Gx,Gy);
     sld.ValueChangedFcn = @(sld,event) updateKsize(sld,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy));
     sldm.ValueChangedFcn = @(sldm,event) updatem(sldm,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),0);
     slds.ValueChangedFcn = @(slds,event) updates(slds,I,g,G,abs(gx),abs(Gx),abs(gy),abs(Gy),0);
@@ -249,7 +255,7 @@ function process(im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2,ksize,m_t,s_
     end
 end
 
-function vector_display(I,Gx,Gy,len,step)
+function vector_display(I,Gx,Gy,len,lenm,step)
     im=im2double(I);
     im=double(im);
     [nr,nc]=size(im);
@@ -258,7 +264,7 @@ function vector_display(I,Gx,Gy,len,step)
     v=Gy(1:step:end,1:step:end);
     l=sqrt(u.^2+v.^2);
     figure(5)
-    quiver(x(l>len),y(l>len),u(l>len),v(l>len))
+    quiver(x(l>len&l<lenm),y(l>len&l<lenm),u(l>len&l<lenm),v(l>len&l<lenm))
 end
 
 function updateKsize(sld,I,im_ref0,im_test0,im_ref1,im_test1,im_ref2,im_test2)
@@ -299,13 +305,19 @@ update_display(I,id);
 end
 
 function updateLength(sldl,I,Gx,Gy)
-global vlen vden;
+global vlen vden vlenm;
 vlen=floor(sldl.Value);
-vector_display(I,Gx,Gy,vlen,vden);
+vector_display(I,Gx,Gy,vlen,vlenm,vden);
 end
 
 function updateDen(sldd,I,Gx,Gy)
-global vlen vden;
+global vlen vden vlenm;
 vden=floor(sldd.Value);
-vector_display(I,Gx,Gy,vlen,vden);
+vector_display(I,Gx,Gy,vlen,vlenm,vden);
+end
+
+function updateLengthm(sldl,I,Gx,Gy)
+global vlen vden vlenm;
+vlenm=floor(sldl.Value);
+vector_display(I,Gx,Gy,vlen,vlenm,vden);
 end
