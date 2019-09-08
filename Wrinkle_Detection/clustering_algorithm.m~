@@ -1,0 +1,58 @@
+m=csvread('/home/rex/Desktop/cluster_points.csv');
+global m_o;
+m_o=zeros(size(m,1),1);
+for i=1:size(m,1)
+    m_o(i)=m(i,1)*10000+m(i,2);
+end
+global map;
+map=zeros(800,800);
+for i=1:size(m,1)
+    map(m(i,1),m(i,2))=1;
+end
+
+t=find_neighbor(103,646);
+
+
+function t=find_neighbor(i,j)
+global map;
+if map(i,j)==0
+    t=[];
+    return;
+end
+map(i,j)=0;
+t=[i,j];
+step=2;
+for a=-step:step
+    for b=-step:step
+        if a==0&&b==0
+            continue;
+        end
+        t=[t;find_neighbor(i+a,j+b)];
+    end
+end
+end
+
+function c=cluster(m)
+global map m_o;
+unclassified=ones(size(m,0),1);
+class=zeros(size(m,0),1);
+class_no=1;
+while sum(sum(map))~=0
+
+    t=find_neighbor(i,j);
+    for i=1:size(t,1)
+        id=find(m_o,t(i,1)*10000+t(i,2));
+        unclassified(id)=0;
+        class(id)=class_no;
+    end
+    class_no=class_no+1;
+end
+c=class;
+end
+
+    
+
+
+
+    
+    
