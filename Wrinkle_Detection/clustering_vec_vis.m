@@ -139,16 +139,18 @@ function vector_display(I,Gx,Gy,len,lenm,step,sc)
     l=sqrt(u.^2+v.^2);
     count=1;
     global clus;
-    clus=zeros(size(l,1),2);
+    clus=zeros(size(l,1),6);
+    c=1;
     for i=1:size(l,1)
         for j=1:size(l,2)
             p=percentile(mag(i,j));
             if p>lenm || p<len
                  l(i,j)=0;
             else
-                clus(count,:)=[i,j];
+                clus(count,:)=[i,j,Gx(c),Gy(c),mag(c),dir(c)];
                 count=count+1;
             end
+            c=c+1;
         end
     end
 

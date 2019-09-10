@@ -19,29 +19,65 @@ end
 c=cluster(m);
 
 
+% function t=find_neighbor(i,j,A)
+% global map an;
+% disp(i)
+% disp(j)
+% %  if i>900||j>900||i<1||j<1||abs(an(i,j)-A)>10
+% if i>900||j>900||i<1||j<1
+%     map(i,j)=0;
+%     t=[0,0];
+%     return;
+% end
+% if map(i,j)==0
+%     t=[0,0];
+%     return;
+% end
+% map(i,j)=0;
+% t=[i,j];
+% step=2;
+% for a=-step:step
+%     for b=-step:step
+%         if a==0&&b==0
+%             continue;
+%         end
+%         t=[t;find_neighbor(i+a,j+b,an(i,j))];
+%     end
+% end
+% end
+
 function t=find_neighbor(i,j,A)
 global map an;
-%  if i>900||j>900||i<1||j<1||abs(an(i,j)-A)>10
-if i>900||j>900||i<1||j<1
-    t=[i,j];
-    return;
-end
-if map(i,j)==0
-    t=[i,j];
-    return;
-end
-map(i,j)=0;
-t=[i,j];
-step=2;
+checked=[i,j];
+k=1;
+t=[];
+step=6;
+while k<=size(checked,1)
+    x=checked(k,1);
+    y=checked(k,2);
+    if map(x,y)==0
+        k=k+1;
+        continue;
+    end
+      t=[t;[x,y]];
+      A=an(x,y);
+
+    k=k+1;
+    map(x,y)=0;
 for a=-step:step
     for b=-step:step
         if a==0&&b==0
             continue;
         end
-        t=[t;find_neighbor(i+a,j+b,an(i,j))];
+        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>1
+        continue;
+        end
+        checked=[checked;[x+a,y+b]];
     end
 end
 end
+end
+    
 
 
 
@@ -62,7 +98,6 @@ unclassified=ones(size(m,1),1);
 class=zeros(size(m,1),1);
 class_no=1;
 while sum(sum(map))~=0
-    csf=0;
     it=find_unclassified(unclassified);
     if it==0
         break;
@@ -72,30 +107,22 @@ while sum(sum(map))~=0
     A=m(it,6);
 
     t=find_neighbor(i,j,A);
-    temp=unique(t(:,1)*10000+t(:,2));
-    z=zeros(size(temp,1),2);
-    z(:,1)=floor(temp/10000);
-    z(:,2)=mod(temp,10000);
-    t=z;
     points=0;
+    ids=[];
     for i=1:size(t,1)
         id=ind(t(i,1),t(i,2));
-        if id>0
-         unclassified(id)=0;
-         points=points+1;
-        end;
-        if points>100 && id>0
-          class(id)=class_no;
-          csf=1;
+        ids=[ids;id];
+        unclassified(id)=0;
+        points=points+1;
+    end
+        if points>100
+          class(ids)=class_no;
+          class_no=class_no+1
         end
 %     if class_no==148
 %         ref=t;
 %             end
-    end
 
-    if csf==1
-      class_no=class_no+1
-    end
 end
 c=class;
 end
