@@ -2,7 +2,7 @@ clc;
 clear;
 close all;
 warning off;
-global vlen vlenm vden sc;
+global vlen vlenm vden sc clus;
 D = '/home/rex/Desktop/TestData2';
 S = dir(fullfile(D,'*.png'));
 length(S);
@@ -10,23 +10,23 @@ global u tot per;
 fig = uifigure;
 
 sldlm=uislider(fig);
-sldlm.Limits=[0 1000];
+sldlm.Limits=[0 100];
 sldlm.Position = [81,350,419,20];
 
 
 txl = uilabel(fig);
-txl.Text='Max Vector Length';
+txl.Text='Max';
 txl.FontSize=12;
 txl.Position = [81,360,200,15];
 
 
 sldl=uislider(fig);
-sldl.Limits=[0 500];
+sldl.Limits=[0 100];
 sldl.Position = [81,250,419,20];
 
 
 txlm = uilabel(fig);
-txlm.Text='Min Vector Length';
+txlm.Text='Min';
 txlm.FontSize=12;
 txlm.Position = [81,260,200,15];
 
@@ -51,14 +51,22 @@ txld.Text='Density';
 txld.FontSize=12;
 txld.Position = [81,160,200,15];
 
-vlen=0;
-vlenm=1000;
+vlen=90;
+vlenm=95;
 vden =1;
-sc=0;
+sc=1;
 sldsc.Value=sc;
 sldl.Value=vlen;
 sldlm.Value=vlenm;
 sldd.Value=vden;
+
+
+global map ind an  ln;
+map=zeros(1000,1000);
+an=zeros(1000,1000);
+ind=zeros(1000,1000);
+ln=zeros(1000,1000);
+
 
 
 for k = 1:numel(S)
@@ -127,6 +135,8 @@ p=sum;
 end
 
 function vector_display(I,Gx,Gy,len,lenm,step,sc)
+    len
+    lenm
     im=im2double(I);
     im=double(im);
     [nr,nc]=size(im);
@@ -135,23 +145,71 @@ function vector_display(I,Gx,Gy,len,lenm,step,sc)
     u=Gx(1:step:end,1:step:end);
     v=Gy(1:step:end,1:step:end);
     l=sqrt(u.^2+v.^2);
-    
+    count=1;
+    global clus;
+    clus=zeros(size(l,1),6);
+    c=1;
     for i=1:size(l,1)
         for j=1:size(l,2)
-            p=percentile(mag(
-            if percentile(mag(i,j))<len
-                l(i,j)=0;
+            p=percentile(mag(i,j));
+            if p>lenm || p<len
+                 l(i,j)=0;
+            else
+                clus(count,:)=[i,j,Gx(i,j),Gy(i,j),mag(i,j),dir(i,j)];
+                count=count+1;
             end
+            c=c+1;
         end
     end
- 
+
     figure(5)
     close;
     imshow(im);
     alpha(0.8);   
     hold on;
     quiver(x(l>0),y(l>0),u(l>0),v(l>0),sc)
+    disp("Processed");
     hold off;
+    m=clus;
+    disp("Clustering");
+    global map an ind ln;
+    for i=1:size(m,1)
+    map(m(i,1),m(i,2))=1;
+    an(m(i,1),m(i,2))=m(i,6);
+    ln(m(i,1),m(i,2))=m(i,5);
+    ind(m(i,1),m(i,2))=i;
+    end
+    
+c=cluster(m);
+tc=unique(c);
+
+
+figure(7)
+ imshow(im);
+ alpha(0.8);
+ hold on;
+ for i=1:size(tc,1)
+    xt=[];
+    yt=[];
+    lt=[];
+    at=[];
+     if tc(i)==0
+         continue;
+     end
+     disp("Visualizing clusters");
+     i
+    ids=find(c==tc(i));
+    xt=m(ids,1);
+    yt=m(ids,2);
+    ut=m(ids,3);
+    vt=m(ids,4);
+    quiver(yt,xt,ut,vt,sc);
+ end
+    hold off;
+    disp("Visualizing done");
+    figure(11)
+    gscatter(m(:,2),m(:,1),c);
+
 end
 
 function display_image(im)
@@ -159,25 +217,12 @@ function display_image(im)
 end
 
 function [x,y]=calc_gradient_cell(a,ksize)
-sumx1=0.0;
-sumx2=0.0;
-sumy1=0.0;
-sumy2=0.0;
-for i=1:floor(ksize/2)
-    sumx1=sumx1+sum(a(:,i));
-end
-for i=ceil(ksize/2)+1:ksize
-    sumx2=sumx2+sum(a(:,i));
-end
-for i=1:floor(ksize/2)
-    sumy1=sumy1+sum(a(i,:));
-end
-for i=ceil(ksize/2)+1:ksize
-    sumy2=sumy2+sum(a(i,:));
-end
-no=floor(ksize/2)*ksize;
-x=(sumx2-sumx1)/no;
-y=(sumy2-sumy1)/no;
+sumx1=mean2(a(:,1:floor(ksize/2)));
+sumx2=mean2(a(:,ceil(ksize/2)+1:ksize));
+sumy1=mean2(a(1:floor(ksize/2),:));
+sumy2=mean2(a(ceil(ksize/2)+1:ksize,:));
+x=(sumx2-sumx1);
+y=(sumy2-sumy1);
 end
 
 
@@ -191,7 +236,7 @@ function [gx,gy]=calc_gradient(im,ksize)
         v0=zeros(size(a0(r,:)));
         v1=zeros(size(a0(r,:)));
         for c=step+1:size(a0,2)-step
-            [lx,ly]=calc_gradient_cell((a0(r-step:r+step,c-step:c+step)),3);
+            [lx,ly]=calc_gradient_cell((a0(r-step:r+step,c-step:c+step)),5);
             v0(c)=lx;
             v1(c)=ly;           
         end
@@ -227,4 +272,87 @@ sc=floor(sldl.Value);
 sldl.Value=sc;
 end
 vector_display(I,Gx,Gy,vlen,vlenm,vden,sc);
+end
+
+function t=find_neighbor(i,j,A,l)
+global map an ln;
+checked=[i,j];
+k=1;
+t=[];
+step=2;
+while k<=size(checked,1)
+    x=checked(k,1);
+    y=checked(k,2);
+    if map(x,y)==0
+        k=k+1;
+        continue;
+    end
+      t=[t;[x,y]];
+        A=an(x,y);
+        l=ln(x,y);
+
+    k=k+1;
+    map(x,y)=0;
+for a=-step:step
+    for b=-step:step
+        if a==0&&b==0
+            continue;
+        end
+        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>20||abs(l-ln(x+a,y+b))/(l+ln(x+a
+        continue;
+        end
+        checked=[checked;[x+a,y+b]];
+    end
+end
+end
+end
+    
+
+
+
+function id=find_unclassified(unclassified)
+for i=1:size(unclassified,1)
+    if unclassified(i)==1
+        id=i;
+        return;
+    end
+end
+id=0;
+end
+
+
+function c=cluster(m)
+global map m_o ref ind;
+unclassified=ones(size(m,1),1);
+class=zeros(size(m,1),1);
+class_no=1;
+while sum(sum(map))~=0
+    it=find_unclassified(unclassified);
+    if it==0
+        break;
+    end
+    i=m(it,1);
+    j=m(it,2);
+    A=m(it,6);
+    l=m(it,5);
+
+    t=find_neighbor(i,j,A,l);
+    points=0;
+    ids=[];
+    for i=1:size(t,1)
+        id=ind(t(i,1),t(i,2));
+        ids=[ids;id];
+        unclassified(id)=0;
+        points=points+1;
+    end
+        if points>10
+          class(ids)=class_no;
+          class_no=class_no+1
+        end
+%     if class_no==148
+%         ref=t;
+%             end
+
+end
+c=class;
 end

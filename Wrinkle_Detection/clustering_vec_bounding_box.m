@@ -61,11 +61,10 @@ sldlm.Value=vlenm;
 sldd.Value=vden;
 
 
-global map ind an  ln;
+global map ind;
 map=zeros(1000,1000);
 an=zeros(1000,1000);
 ind=zeros(1000,1000);
-ln=zeros(1000,1000);
 
 
 
@@ -172,11 +171,10 @@ function vector_display(I,Gx,Gy,len,lenm,step,sc)
     hold off;
     m=clus;
     disp("Clustering");
-    global map an ind ln;
+    global map an ind;
     for i=1:size(m,1)
     map(m(i,1),m(i,2))=1;
     an(m(i,1),m(i,2))=m(i,6);
-    ln(m(i,1),m(i,2))=m(i,5);
     ind(m(i,1),m(i,2))=i;
     end
     
@@ -274,8 +272,8 @@ end
 vector_display(I,Gx,Gy,vlen,vlenm,vden,sc);
 end
 
-function t=find_neighbor(i,j,A,l)
-global map an ln;
+function t=find_neighbor(i,j,A)
+global map an;
 checked=[i,j];
 k=1;
 t=[];
@@ -288,8 +286,7 @@ while k<=size(checked,1)
         continue;
     end
       t=[t;[x,y]];
-        A=an(x,y);
-        l=ln(x,y);
+%        A=an(x,y);
 
     k=k+1;
     map(x,y)=0;
@@ -298,7 +295,7 @@ for a=-step:step
         if a==0&&b==0
             continue;
         end
-        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>20||abs(l-ln(x+a,y+b))/(l+ln(x+a,y+b))>0.20
+        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>20
         continue;
         end
         checked=[checked;[x+a,y+b]];
@@ -334,9 +331,8 @@ while sum(sum(map))~=0
     i=m(it,1);
     j=m(it,2);
     A=m(it,6);
-    l=m(it,5);
 
-    t=find_neighbor(i,j,A,l);
+    t=find_neighbor(i,j,A);
     points=0;
     ids=[];
     for i=1:size(t,1)
@@ -348,19 +344,6 @@ while sum(sum(map))~=0
         if points>50
           class(ids)=class_no;
           class_no=class_no+1
-        elseif points>10
-          pt=transpose(t);
-          if rank(t(2:end,:) - t(1,:)) ~= 1
-          rt=minBoundingBox(pt);
-          lenght=norm(rt(:,1)-rt(:,2));
-          breadth=norm(rt(:,2)-rt(:,3));
-          aspect_ratio=max(lenght,breadth)/min(lenght,breadth);
-          if aspect_ratio>4
-              disp("Bounding box checking");
-              class(ids)=class_no;
-              class_no=class_no+1;
-          end
-          end
         end
 %     if class_no==148
 %         ref=t;

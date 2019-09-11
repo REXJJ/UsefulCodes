@@ -16,8 +16,8 @@ for i=1:size(m,1)
 end
 
 
-c=cluster(m);
-
+   c=cluster(m);
+%  t=find_neighbor(68,306,153)
 
 % function t=find_neighbor(i,j,A)
 % global map an;
@@ -51,7 +51,7 @@ global map an;
 checked=[i,j];
 k=1;
 t=[];
-step=6;
+step=4;
 while k<=size(checked,1)
     x=checked(k,1);
     y=checked(k,2);
@@ -59,20 +59,22 @@ while k<=size(checked,1)
         k=k+1;
         continue;
     end
-      t=[t;[x,y]];
-      A=an(x,y);
+    t=[t;[x,y]];
+    map(x,y)=0;
+%       A=an(x,y);
 
     k=k+1;
-    map(x,y)=0;
 for a=-step:step
     for b=-step:step
         if a==0&&b==0
             continue;
         end
-        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>1
+
+        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>10
         continue;
+        else
+         checked=[checked;[x+a,y+b]];
         end
-        checked=[checked;[x+a,y+b]];
     end
 end
 end
