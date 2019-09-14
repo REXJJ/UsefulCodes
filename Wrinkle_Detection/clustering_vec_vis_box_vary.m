@@ -51,6 +51,7 @@ txld.Text='Density';
 txld.FontSize=12;
 txld.Position = [81,160,200,15];
 
+
 vlen=90;
 vlenm=95;
 vden =1;
@@ -209,7 +210,7 @@ figure(7)
  ids=find(c>0);
  xt=m(ids,1);
  yt=m(ids,2);
- scatter(yt,xt,'.');
+ scatter(yt,xt);
  hold off;
 
     disp("Visualizing done");
@@ -351,10 +352,10 @@ while sum(sum(map))~=0
         unclassified(id)=0;
         points=points+1;
     end
-        if points>50
+        if points>70
           class(ids)=class_no;
           class_no=class_no+1
-        elseif points>10
+        elseif points>30
           pt=transpose(t);
           if rank(t(2:end,:) - t(1,:)) ~= 1
           rt=minBoundingBox(pt);

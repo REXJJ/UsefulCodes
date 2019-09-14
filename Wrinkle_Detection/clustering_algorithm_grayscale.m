@@ -2,40 +2,57 @@ clear;
 close all;
 warning off;
 global an;
-m=csvread('/home/rex/Desktop/cluster_points.csv');
-global m_o;
-global ref;
-global map ind;
-map=zeros(1000,1000);
-an=zeros(1000,1000);
+% D = '/home/rex/Desktop/TestData2';
+D = '/home/rex/Desktop/ICRA/TEST';
+
+S = dir(fullfile(D,'*.jpg'));
+F = fullfile(D,S(2).name);
+I = imread(F);
+% I=rgb2gray(I);
+I = medfilt2(I,[5,5]); 
+global map ind an;
+map=ones(1000,1000);
 ind=zeros(1000,1000);
-for i=1:size(m,1)
-    map(m(i,1),m(i,2))=1;
-    an(m(i,1),m(i,2))=m(i,6);
-    ind(m(i,1),m(i,2))=i;
-end
+an=I;
+x=265;
+y=629;
+x=250;
+y=580;
+t=find_neighbor(x,y,an(x,y));
+% c=cluster(m);
+% d=[];
+% for i=1:700
+%     for j=1:900
+%         if an(i,j)==100
+%             t=find_neighbor(i,j,an(i,j));
+%             d=[d;t];
+%         end
+%     end
+% end
+figure(1)
+imshow(I)
+hold on;
+scatter(t(:,2),t(:,1),'.')
 
-
-   c=cluster(m);
-
-
-function t=find_neighbor(i,j,A,l)
+function t=find_neighbor(i,j,g)
 global map an ln;
 checked=[i,j];
 k=1;
 t=[];
 step=2;
+neighbors=1;
 while k<=size(checked,1)
     x=checked(k,1);
     y=checked(k,2);
+    if neighbors>3000
+        break;
+    end
     if map(x,y)==0
         k=k+1;
         continue;
     end
       t=[t;[x,y]];
-        A=an(x,y);
-        l=ln(x,y);
-
+      neighbors=neighbors+1;
     k=k+1;
     map(x,y)=0;
 for a=-step:step
@@ -43,7 +60,7 @@ for a=-step:step
         if a==0&&b==0
             continue;
         end
-        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>20||abs(l-ln(x+a,y+b))/(l+ln(x+a,y+b))>0.20
+        if x+a>700||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(g-an(x+a,y+b))>20||y+b<150
         continue;
         end
         checked=[checked;[x+a,y+b]];

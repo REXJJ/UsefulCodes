@@ -81,20 +81,36 @@ for k = 1:numel(S)
     sldlm.ValueChangedFcn = @(sldlm,event) update(sldlm,I,gx,gy,1);
     sldsc.ValueChangedFcn = @(sldlm,event) update(sldsc,I,gx,gy,3);
     ll=floor(l*100);
-    u=unique(ll);
-    u=sort(u);
+    ll=ll(:);
+%     u=unique(ll);
+%     u=sort(u);
     tot=zeros(size(u));
-    parfor i=1:length(u)
-        for j=1:size(l,1)
-            for k=1:size(l,2)
-                tot(i)=tot(i)+(ll(j,k)==u(i));
-            end
-        end
+%     parfor i=1:length(u)
+%         for j=1:size(l,1)
+%             for k=1:size(l,2)
+%                 tot(i)=tot(i)+(ll(j,k)==u(i));
+%             end
+%         end
+%     end
+%     per=zeros(size(u));
+%     for i=1:length(u)
+%         per(i)=percentage(u(i));
+%     end
+
+per=zeros(100000,1);
+bins=100000;
+for i=1:size(ll,1)
+    if ll(i)>=bins
+        continue;
     end
-    per=zeros(size(u));
-    for i=1:length(u)
-        per(i)=percentage(u(i));
-    end
+    per(floor(ll(i))+1)=per(floor(ll(i))+1)+1;
+end
+
+for i=2:size(ll,1)
+    per(i)=per(i-1)+per(i);
+end
+
+
     vector_display(I,gx,gy,vlen,vlenm,vden,sc);
     
 %     figure(4);
@@ -113,13 +129,15 @@ end
 
 
 function p=percentage(pt)
-global u tot;
-index=find(u==pt);
-if length(index)==0
-    p=0;
-else
-p=(tot(index)*100000.0/sum(tot))/1000.0;
-end
+% global u tot;
+% index=find(u==pt);
+% if length(index)==0
+%     p=0;
+% else
+% p=(tot(index)*100000.0/sum(tot))/1000.0;
+% end
+global per;
+p= per(floor(per*100)+1);
 end
 
 function p=percentile(pt)
@@ -151,25 +169,26 @@ function vector_display(I,Gx,Gy,len,lenm,step,sc)
     c=1;
     for i=1:size(l,1)
         for j=1:size(l,2)
+            mag(i,j)
             p=percentile(mag(i,j));
             if p>lenm || p<len
                  l(i,j)=0;
             else
-                clus(count,:)=[i,j,Gx(i,j),Gy(i,j),mag(i,j),dir(i,j)];
+                clus(count,:)=[i,j,Gx(i,j),Gy(i,j),mag(i,j),dir(i,j)]
                 count=count+1;
             end
             c=c+1;
         end
     end
 
-    figure(5)
-    close;
-    imshow(im);
-    alpha(0.8);   
-    hold on;
-    quiver(x(l>0),y(l>0),u(l>0),v(l>0),sc)
-    disp("Processed");
-    hold off;
+%     figure(5)
+%     close;
+%     imshow(im);
+%     alpha(0.8);   
+%     hold on;
+%     quiver(x(l>0),y(l>0),u(l>0),v(l>0),sc)
+%     disp("Processed");
+%     hold off;
     m=clus;
     disp("Clustering");
     global map an ind ln;
@@ -188,24 +207,30 @@ figure(7)
  imshow(im);
  alpha(0.8);
  hold on;
- for i=1:size(tc,1)
-    xt=[];
-    yt=[];
-    lt=[];
-    at=[];
-     if tc(i)==0
-         continue;
-     end
-     disp("Visualizing clusters");
-     i
-    ids=find(c==tc(i));
-    xt=m(ids,1);
-    yt=m(ids,2);
-    ut=m(ids,3);
-    vt=m(ids,4);
-    quiver(yt,xt,ut,vt,sc);
- end
-    hold off;
+%  for i=1:size(tc,1)
+%     xt=[];
+%     yt=[];
+%     lt=[];
+%     at=[];
+%      if tc(i)==0
+%          continue;
+%      end
+%      disp("Visualizing clusters");
+%      i
+%     ids=find(c==tc(i));
+%     xt=m(ids,1);
+%     yt=m(ids,2);
+%     ut=m(ids,3);
+%     vt=m(ids,4);
+%     quiver(yt,xt,ut,vt,sc);
+%  end
+%     hold off;
+ ids=find(c>0);
+ xt=m(ids,1);
+ yt=m(ids,2);
+ scatter(yt,xt,'.');
+ hold off;
+
     disp("Visualizing done");
     figure(11)
     gscatter(m(:,2),m(:,1),c);
@@ -298,20 +323,19 @@ for a=-step:step
         if a==0&&b==0
             continue;
         end
-        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>20||abs(l-ln(x+a,y+b))/(l+ln(x+a
+        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>20||abs(l-ln(x+a,y+b))/(l+ln(x+a,y+b))>0.20
         continue;
         end
         checked=[checked;[x+a,y+b]];
     end
 end
 end
-end
-    
+end    
 
 
 
-function id=find_unclassified(unclassified)
-for i=1:size(unclassified,1)
+function id=find_unclassified(start,unclassified)
+for i=start:size(unclassified,1)
     if unclassified(i)==1
         id=i;
         return;
@@ -326,8 +350,10 @@ global map m_o ref ind;
 unclassified=ones(size(m,1),1);
 class=zeros(size(m,1),1);
 class_no=1;
-while sum(sum(map))~=0
-    it=find_unclassified(unclassified);
+start=1;
+while 1
+    it=find_unclassified(start,unclassified);
+    start=it;
     if it==0
         break;
     end
@@ -345,9 +371,22 @@ while sum(sum(map))~=0
         unclassified(id)=0;
         points=points+1;
     end
-        if points>10
+        if points>50
           class(ids)=class_no;
-          class_no=class_no+1
+          class_no=class_no+1;
+        elseif points>10
+          pt=transpose(t);
+          if rank(t(2:end,:) - t(1,:)) ~= 1
+          rt=minBoundingBox(pt);
+          lenght=norm(rt(:,1)-rt(:,2));
+          breadth=norm(rt(:,2)-rt(:,3));
+          aspect_ratio=max(lenght,breadth)/min(lenght,breadth);
+          if aspect_ratio>4
+%               disp("Bounding box checking");
+              class(ids)=class_no;
+              class_no=class_no+1;
+          end
+          end
         end
 %     if class_no==148
 %         ref=t;

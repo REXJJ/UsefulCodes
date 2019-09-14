@@ -4,11 +4,11 @@ close all;
 warning off;
 global ksize m_l m_a s_l s_a processed_image vlen vlenm vden reference;
 vlen=0;
-reference = imread('/home/rex/Desktop/ICRA/ref_image.jpg');
+reference = imread('/home/rex/Desktop/reference.jpg');
 figure(3)
 subplot(1,2,1);
 imshow(reference)
-D = '/home/rex/Desktop/ICRA';
+D = '/home/rex/Desktop/TestData';
 S = dir(fullfile(D,'*.jpg'));
 length(S);
 figure(1)
@@ -27,6 +27,11 @@ sp2.Position = sp2.Position + [0 0 h w];
 title('Y gradient Reference Image')
 figure(2)
 fig = uifigure;
+global map ind an  ln clus;
+map=zeros(1000,1000);
+an=zeros(1000,1000);
+ind=zeros(1000,1000);
+ln=zeros(1000,1000);
 
 sldlm=uislider(fig);
 sldlm.Limits=[0 1000];
@@ -170,17 +175,21 @@ function update_display(I)
     global processed_image reference;
     for i=1:size(processed_image,1)
         for j=1:size(processed_image,2)
-            if j<400||i<130||i>631||j<130||j>834
+            if i<75||i>681||j<123||j>834
                 processed_image(i,j)=0;
             end
         end
     end
     BW=processed_image>0;
     CW = bwconvhull(BW);
+    
+    
+    k = boundary(yt,xt);
+    plot(yt(k),xt(k));
 
     figure(2)
     subplot(1,2,1);
-    imshow(BW);
+    imshow(CW);
     title('Processed Image');
     subplot(1,2,2);
     B = labeloverlay(I,CW);
@@ -282,4 +291,101 @@ function updateLengthm(sldl,I,Gx,Gy)
 global vlen vden vlenm;
 vlenm=floor(sldl.Value);
 vector_display(I,Gx,Gy,vlen,vlenm,vden);
+end
+
+function t=find_neighbor(i,j,A,l)
+global map an ln;
+checked=[i,j];
+k=1;
+t=[];
+step=2;
+while k<=size(checked,1)
+    x=checked(k,1);
+    y=checked(k,2);
+    if map(x,y)==0
+        k=k+1;
+        continue;
+    end
+      t=[t;[x,y]];
+        A=an(x,y);
+        l=ln(x,y);
+
+    k=k+1;
+    map(x,y)=0;
+for a=-step:step
+    for b=-step:step
+        if a==0&&b==0
+            continue;
+        end
+        if x+a>900||y+b>900||x+a<1||y+b<1||map(x+a,y+b)==0||abs(an(x+a,y+b)-A)>20||abs(l-ln(x+a,y+b))/(l+ln(x+a,y+b))>0.20
+        continue;
+        end
+        checked=[checked;[x+a,y+b]];
+    end
+end
+end
+end    
+
+
+
+function id=find_unclassified(start,unclassified)
+for i=start:size(unclassified,1)
+    if unclassified(i)==1
+        id=i;
+        return;
+    end
+end
+id=0;
+end
+
+
+function c=cluster(m)
+global map m_o ref ind;
+unclassified=ones(size(m,1),1);
+class=zeros(size(m,1),1);
+class_no=1;
+start=1;
+while 1
+    it=find_unclassified(start,unclassified);
+    start=it;
+    if it==0
+        break;
+    end
+    i=m(it,1);
+    j=m(it,2);
+    A=m(it,6);
+    l=m(it,5);
+
+    t=find_neighbor(i,j,A,l);
+    points=0;
+    ids=[];
+    for i=1:size(t,1)
+        id=ind(t(i,1),t(i,2));
+        ids=[ids;id];
+        unclassified(id)=0;
+        points=points+1;
+    end
+        if points>50
+          class(ids)=class_no;
+          class_no=class_no+1
+        elseif points>10
+          pt=transpose(t);
+          if rank(t(2:end,:) - t(1,:)) ~= 1
+          rt=minBoundingBox(pt);
+          lenght=norm(rt(:,1)-rt(:,2));
+          breadth=norm(rt(:,2)-rt(:,3));
+          aspect_ratio=max(lenght,breadth)/min(lenght,breadth);
+          if aspect_ratio>4
+%               disp("Bounding box checking");
+              class(ids)=class_no;
+              class_no=class_no+1;
+          end
+          end
+        end
+%     if class_no==148
+%         ref=t;
+%             end
+
+end
+c=class;
 end

@@ -3,10 +3,14 @@ clear;
 close all;
 warning off;
 global vlen vlenm vden sc clus;
-D = '/home/rex/Desktop/TestData2';
-S = dir(fullfile(D,'*.png'));
+% D = '/home/rex/Desktop/TestData2';
+D = '/home/rex/Desktop/ICRA/TEST';
+global filtered;
+filtered=csvread('/home/rex/Desktop/ICRA/TEST/filtered.csv');
+file_no=1;
+S = dir(fullfile(D,'*.jpg'));
 length(S);
-global u tot per;
+global bins per;
 fig = uifigure;
 
 sldlm=uislider(fig);
@@ -67,34 +71,34 @@ an=zeros(1000,1000);
 ind=zeros(1000,1000);
 ln=zeros(1000,1000);
 
-
-
+figure(1)
+figure(2)
 for k = 1:numel(S)
     disp(k);
     F = fullfile(D,S(k).name);
     I = imread(F);
-    I=rgb2gray(I);
+%     I=rgb2gray(I);
      I = medfilt2(I,[5,5]);
+     figure(1);
+     imshow(I);
     [l,a,gx,gy]=getgradient(I);
     sldd.ValueChangedFcn = @(sldd,event) update(sldd,I,gx,gy,2);
     sldl.ValueChangedFcn = @(sldl,event) update(sldl,I,gx,gy,0);
     sldlm.ValueChangedFcn = @(sldlm,event) update(sldlm,I,gx,gy,1);
     sldsc.ValueChangedFcn = @(sldlm,event) update(sldsc,I,gx,gy,3);
     ll=floor(l*100);
-    u=unique(ll);
-    u=sort(u);
-    tot=zeros(size(u));
-    parfor i=1:length(u)
-        for j=1:size(l,1)
-            for k=1:size(l,2)
-                tot(i)=tot(i)+(ll(j,k)==u(i));
-            end
-        end
+    ll=ll(:);
+    bins=max(ll)+1;
+    per=zeros(bins,1);
+
+    for i=1:size(ll,1)
+      per(ll(i)+1)=per(ll(i)+1)+1;
     end
-    per=zeros(size(u));
-    for i=1:length(u)
-        per(i)=percentage(u(i));
+
+    for i=2:bins
+      per(i)=per(i-1)+per(i);
     end
+
     vector_display(I,gx,gy,vlen,vlenm,vden,sc);
     
 %     figure(4);
@@ -105,33 +109,20 @@ for k = 1:numel(S)
 %     display_image(gx);
 %     subplot(1,2,2)
 %     display_image(gy);
-    figure(6);
+    figure(3);
     display_image(l);
     w = waitforbuttonpress;
     %S(k).data = I; % optional, save data.
 end
 
 
-function p=percentage(pt)
-global u tot;
-index=find(u==pt);
-if length(index)==0
-    p=0;
-else
-p=(tot(index)*100000.0/sum(tot))/1000.0;
-end
-end
-
 function p=percentile(pt)
-pt=floor(pt*100);
-global u per;
-sum=0;
-i=1;
-while i<length(u) && u(i) <=pt
-    sum=sum+per(i);
-    i=i+1;
+global per bins;
+if floor(pt*100)+1>bins
+    p=100;
+else
+p= (per(floor(pt*100)+1)*100)/per(end);
 end
-p=sum;
 end
 
 function vector_display(I,Gx,Gy,len,lenm,step,sc)
@@ -146,13 +137,13 @@ function vector_display(I,Gx,Gy,len,lenm,step,sc)
     v=Gy(1:step:end,1:step:end);
     l=sqrt(u.^2+v.^2);
     count=1;
-    global clus;
-    clus=zeros(size(l,1),6);
+    global clus filtered;
+    clus=[];
     c=1;
     for i=1:size(l,1)
         for j=1:size(l,2)
             p=percentile(mag(i,j));
-            if p>lenm || p<len
+            if p>lenm || p<len||filtered(i,j)==0
                  l(i,j)=0;
             else
                 clus(count,:)=[i,j,Gx(i,j),Gy(i,j),mag(i,j),dir(i,j)];
@@ -162,60 +153,81 @@ function vector_display(I,Gx,Gy,len,lenm,step,sc)
         end
     end
 
-%     figure(5)
-%     close;
-%     imshow(im);
-%     alpha(0.8);   
-%     hold on;
-%     quiver(x(l>0),y(l>0),u(l>0),v(l>0),sc)
-%     disp("Processed");
-%     hold off;
-    m=clus;
-    disp("Clustering");
-    global map an ind ln;
-    for i=1:size(m,1)
-    map(m(i,1),m(i,2))=1;
-    an(m(i,1),m(i,2))=m(i,6);
-    ln(m(i,1),m(i,2))=m(i,5);
-    ind(m(i,1),m(i,2))=i;
-    end
-    
-c=cluster(m);
-tc=unique(c);
+%      figure(2);
+%      imshow(im);
+%      alpha(0.8);   
+%      hold on;
+%      quiver(x(l>0),y(l>0),u(l>0),v(l>0),sc)
+%      disp("Processed");
+%      hold off;
+     m=clus;
+     disp("Clustering");
+     global map an ind ln;
+     for i=1:size(m,1)
+     map(m(i,1),m(i,2))=1;
+     an(m(i,1),m(i,2))=m(i,6);
+     ln(m(i,1),m(i,2))=m(i,5);
+     ind(m(i,1),m(i,2))=i;
+     end
+     
+ c=cluster(m);
+ tc=unique(c);
+ 
+ 
+ figure(2)
+  imshow(im);
+  alpha(0.8);
+  hold on;
+%   imcontour(im);
+ %  for i=1:size(tc,1)
+ %     xt=[];
+ %     yt=[];
+ %     lt=[];
+ %     at=[];
+ %      if tc(i)==0
+ %          continue;
+ %      end
+ %      disp("Visualizing clusters");
+ %      i
+ %     ids=find(c==tc(i));
+ %     xt=m(ids,1);
+ %     yt=m(ids,2);
+ %     ut=m(ids,3);
+ %     vt=m(ids,4);
+ %     quiver(yt,xt,ut,vt,sc);
+ %  end
+ %     hold off;
+%   ids=find(c>0);
+%   xt=m(ids,1);
+%   yt=m(ids,2);
+%   z=[xt,yt];
+%   nz=clean_cluster(z);
+%   disp("Starting to visualize");
+%   scatter(nz(:,2),nz(:,1),'.');
+%   hold off; 
+%      disp("Visualizing done");
+%      figure(11)
+%      gscatter(m(:,2),m(:,1),c);
+%      I=(imclearborder(I));
+%      imcontour(I);
 
-
-figure(7)
- imshow(im);
- alpha(0.8);
- hold on;
-%  for i=1:size(tc,1)
-%     xt=[];
-%     yt=[];
-%     lt=[];
-%     at=[];
-%      if tc(i)==0
-%          continue;
-%      end
-%      disp("Visualizing clusters");
-%      i
-%     ids=find(c==tc(i));
-%     xt=m(ids,1);
-%     yt=m(ids,2);
-%     ut=m(ids,3);
-%     vt=m(ids,4);
-%     quiver(yt,xt,ut,vt,sc);
-%  end
-%     hold off;
- ids=find(c>0);
- xt=m(ids,1);
- yt=m(ids,2);
- scatter(yt,xt,'.');
- hold off;
-
-    disp("Visualizing done");
-    figure(11)
-    gscatter(m(:,2),m(:,1),c);
-
+for i=1:size(tc,1)
+     xt=[];
+     yt=[];
+     lt=[];
+     at=[];
+      if tc(i)==0
+          continue;
+      end
+      disp("Visualizing clusters");
+      i
+     ids=find(c==tc(i));
+     xt=m(ids,1);
+     yt=m(ids,2);
+     k = boundary(yt,xt,0.1);
+     plot(yt(k),xt(k));
+  end
+     hold off;
 end
 
 function display_image(im)
@@ -311,13 +323,12 @@ for a=-step:step
     end
 end
 end
-end
-    
+end    
 
 
 
-function id=find_unclassified(unclassified)
-for i=1:size(unclassified,1)
+function id=find_unclassified(start,unclassified)
+for i=start:size(unclassified,1)
     if unclassified(i)==1
         id=i;
         return;
@@ -332,8 +343,10 @@ global map m_o ref ind;
 unclassified=ones(size(m,1),1);
 class=zeros(size(m,1),1);
 class_no=1;
-while sum(sum(map))~=0
-    it=find_unclassified(unclassified);
+start=1;
+while 1
+    it=find_unclassified(start,unclassified);
+    start=it;
     if it==0
         break;
     end
@@ -375,3 +388,27 @@ while sum(sum(map))~=0
 end
 c=class;
 end
+
+function d=clean_cluster(c)
+map=zeros(1000,1000);
+size(c)
+new_c=[];
+for i=1:size(c,1)
+        map(c(i,1),c(i,2))=1;
+    end
+for i=2:size(c,1)-1
+    x=c(i,1);
+    y=c(i,2); 
+        s=sum(sum(map(x-1:x+1,y-1:y+1)));
+        if s<3
+            new_c=[new_c;[x,y]];
+        else
+            map(x,y)=0;
+        end
+end
+d=new_c;
+disp("Cleaning Clusters Done");
+end
+
+            
+        

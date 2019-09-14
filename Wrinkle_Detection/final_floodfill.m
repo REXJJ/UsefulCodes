@@ -1,0 +1,314 @@
+clc;
+clear;
+close all;
+warning off;
+global vlen vlenm vden sc clus;
+% D = '/home/rex/Desktop/TestData2';
+D = '/home/rex/Desktop/ICRA/TEST';
+global filtered;
+filtered=csvread('/home/rex/Desktop/ICRA/TEST/filtered.csv');
+file_no=1;
+S = dir(fullfile(D,'*.jpg'));
+length(S);
+global bins per;
+fig = uifigure;
+
+sldlm=uislider(fig);
+sldlm.Limits=[0 100];
+sldlm.Position = [81,350,419,20];
+
+
+txl = uilabel(fig);
+txl.Text='Max';
+txl.FontSize=12;
+txl.Position = [81,360,200,15];
+
+
+sldl=uislider(fig);
+sldl.Limits=[0 100];
+sldl.Position = [81,250,419,20];
+
+
+txlm = uilabel(fig);
+txlm.Text='Min';
+txlm.FontSize=12;
+txlm.Position = [81,260,200,15];
+
+
+sldd=uislider(fig);
+sldd.Limits=[1 31];
+sldd.Position = [81,150,419,20];
+
+
+txld = uilabel(fig);
+txld.Text='Scale';
+txld.FontSize=12;
+txld.Position = [81,60,200,15];
+
+sldsc=uislider(fig);
+sldsc.Limits=[0 20];
+sldsc.Position = [81,50,419,20];
+
+
+txld = uilabel(fig);
+txld.Text='Density';
+txld.FontSize=12;
+txld.Position = [81,160,200,15];
+
+vlen=90;
+vlenm=95;
+vden =1;
+sc=1;
+sldsc.Value=sc;
+sldl.Value=vlen;
+sldlm.Value=vlenm;
+sldd.Value=vden;
+
+
+global map ind an  ln;
+map=zeros(1000,1000);
+an=zeros(1000,1000);
+ind=zeros(1000,1000);
+ln=zeros(1000,1000);
+
+figure(1)
+figure(2)
+for k = 1:numel(S)
+    disp(k);
+    F = fullfile(D,S(k).name);
+    I = imread(F);
+%     I=rgb2gray(I);
+     I = medfilt2(I,[5,5]);
+     figure(1);
+     imshow(I);
+    [l,a,gx,gy]=getgradient(I);
+    sldd.ValueChangedFcn = @(sldd,event) update(sldd,I,gx,gy,2);
+    sldl.ValueChangedFcn = @(sldl,event) update(sldl,I,gx,gy,0);
+    sldlm.ValueChangedFcn = @(sldlm,event) update(sldlm,I,gx,gy,1);
+    sldsc.ValueChangedFcn = @(sldlm,event) update(sldsc,I,gx,gy,3);
+    ll=floor(l*100);
+    ll=ll(:);
+    bins=max(ll)+1;
+    per=zeros(bins,1);
+
+    for i=1:size(ll,1)
+      per(ll(i)+1)=per(ll(i)+1)+1;
+    end
+
+    for i=2:bins
+      per(i)=per(i-1)+per(i);
+    end
+
+    vector_display(I,gx,gy,vlen,vlenm,vden,sc);
+    
+%     figure(4);
+%     imshow(I);
+%     figure(4)
+%     subplot(1,2,1);
+%     [g,dir,gx,gy]=getgradient(I);
+%     display_image(gx);
+%     subplot(1,2,2)
+%     display_image(gy);
+    figure(3);
+    display_image(l);
+    w = waitforbuttonpress;
+    %S(k).data = I; % optional, save data.
+end
+
+
+function p=percentile(pt)
+global per bins;
+if floor(pt*100)+1>bins
+    p=100;
+else
+p= (per(floor(pt*100)+1)*100)/per(end);
+end
+end
+
+function vector_display(I,Gx,Gy,len,lenm,step,sc)
+    len
+    lenm
+    im=im2double(I);
+    im=double(im);
+    [nr,nc]=size(im);
+    [mag,dir] = imgradient(Gx,Gy);
+    [x,y]=meshgrid(1:step:nc,1:step:nr);
+    u=Gx(1:step:end,1:step:end);
+    v=Gy(1:step:end,1:step:end);
+    l=sqrt(u.^2+v.^2);
+    count=1;
+    global clus filtered;
+    clus=[];
+    c=1;
+    for i=1:size(l,1)
+        for j=1:size(l,2)
+            p=percentile(mag(i,j));
+            if p>lenm || p<len||filtered(i,j)==0
+                 l(i,j)=0;
+            else
+                clus(count,:)=[i,j,Gx(i,j),Gy(i,j),mag(i,j),dir(i,j)];
+                count=count+1;
+            end
+            c=c+1;
+        end
+    end
+
+%      figure(2);
+%      imshow(im);
+%      alpha(0.8);   
+%      hold on;
+%      quiver(x(l>0),y(l>0),u(l>0),v(l>0),sc)
+%      disp("Processed");
+%      hold off;
+     m=clus;
+     disp("Clustering");
+     global map an ind ln;
+     for i=1:size(m,1)
+     map(m(i,1),m(i,2))=1;
+     an(m(i,1),m(i,2))=m(i,6);
+     ln(m(i,1),m(i,2))=m(i,5);
+     ind(m(i,1),m(i,2))=i;
+     end
+     
+ c=cluster(m);
+ tc=unique(c);
+ 
+ 
+  figure(2)
+  imshow(im);
+  alpha(0.8);
+  hold on;
+%   imcontour(im);
+ %  for i=1:size(tc,1)
+ %     xt=[];
+ %     yt=[];
+ %     lt=[];
+ %     at=[];
+ %      if tc(i)==0
+ %          continue;
+ %      end
+ %      disp("Visualizing clusters");
+ %      i
+ %     ids=find(c==tc(i));
+ %     xt=m(ids,1);
+ %     yt=m(ids,2);
+ %     ut=m(ids,3);
+ %     vt=m(ids,4);
+ %     quiver(yt,xt,ut,vt,sc);
+ %  end
+ %     hold off;
+%   ids=find(c>0);
+%   xt=m(ids,1);
+%   yt=m(ids,2);
+%   z=[xt,yt];
+%   nz=clean_cluster(z);
+%   disp("Starting to visualize");
+%   scatter(nz(:,2),nz(:,1),'.');
+%   hold off; 
+%      disp("Visualizing done");
+%      figure(11)
+%      gscatter(m(:,2),m(:,1),c);
+%      I=(imclearborder(I));
+%      imcontour(I);
+means=[];
+for i=1:size(tc,1)
+     xt=[];
+     yt=[];
+     lt=[];
+     at=[];
+      if tc(i)==0
+          continue;
+      end
+      disp("Visualizing clusters");
+      i
+     ids=find(c==tc(i));
+     xt=m(ids,1);
+     yt=m(ids,2);
+     k = boundary(yt,xt,0.1);
+     mx=mean(mean(xt));
+     my=mean(mean(yt));
+     means=[means;[mx,my]];
+     scatter(my,mx);
+  end
+     hold off;
+     
+      figure(13);
+      imshow(im);
+      alpha(0.8);
+      hold on;
+      k=boundary(means(:,2),means(:,1),0.1);
+      plot(means(k,2),means(k,1),'LineWidth',2);
+      hold off;
+      
+     
+end
+
+function display_image(im)
+    imshow(im, [min(im(:)) max(im(:))])
+end
+
+function [x,y]=calc_gradient_cell(a,ksize)
+sumx1=mean2(a(:,1:floor(ksize/2)));
+sumx2=mean2(a(:,ceil(ksize/2)+1:ksize));
+sumy1=mean2(a(1:floor(ksize/2),:));
+sumy2=mean2(a(ceil(ksize/2)+1:ksize,:));
+x=(sumx2-sumx1);
+y=(sumy2-sumy1);
+end
+
+
+
+function [mag,dir,gx,gy] = getgradient(im)
+    [gx,gy] = calc_gradient(im,5);
+    %[gx,gy] = imgradientxy(im,"prewitt");
+    [mag,dir] = imgradient(gx,gy);
+end
+
+
+function update(sldl,I,Gx,Gy,id)
+global vlen vden vlenm sc;
+if id==0
+vlen=floor(sldl.Value);
+sldl.Value=vlen;
+end
+if id==1
+vlenm=floor(sldl.Value);
+sldl.Value=vlenm;
+end
+if id==2
+vden=floor(sldl.Value);
+sldl.Value=vden;
+end
+if id==3
+sc=floor(sldl.Value);
+sldl.Value=sc;
+end
+vector_display(I,Gx,Gy,vlen,vlenm,vden,sc);
+end
+
+
+
+function [gx,gy]=calc_gradient(im,ksize)
+    a0 = im;
+    gx=zeros(size(im));
+    gy=zeros(size(im));
+    n=ksize*ksize;
+    step=floor(ksize/2);
+    parfor r=step+1:size(a0,1)-step
+        v0=zeros(size(a0(r,:)));
+        v1=zeros(size(a0(r,:)));
+        for c=step+1:size(a0,2)-step
+            [lx,ly]=calc_gradient_cell((a0(r-step:r+step,c-step:c+step)),5);
+            v0(c)=lx;
+            v1(c)=ly;           
+        end
+        gx(r,:)=v0;
+        gy(r,:)=v1;
+   end
+end
+
+
+
+
+            
+        

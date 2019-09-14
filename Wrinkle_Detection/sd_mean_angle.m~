@@ -170,7 +170,7 @@ function update_display(I)
     global processed_image reference;
     for i=1:size(processed_image,1)
         for j=1:size(processed_image,2)
-            if j<400||i<130||i>631||j<130||j>834
+            if j<400||i<75||i>631||j<123||j>834
                 processed_image(i,j)=0;
             end
         end
@@ -183,7 +183,7 @@ function update_display(I)
     imshow(BW);
     title('Processed Image');
     subplot(1,2,2);
-    B = labeloverlay(I,CW);
+    B = labeloverlay(I,BW);
     imshow(B)
     title('Overlaid Image');
 end
